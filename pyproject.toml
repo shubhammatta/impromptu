@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "prompt-enhancer"
+version = "1.0.0"
+description = "Textual TUI that turns crude prompts into engineered ones via a local Ollama instance, with fully automated daemon lifecycle management."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+keywords = ["tui", "textual", "ollama", "llm", "prompt-engineering"]
+classifiers = [
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Terminals",
+]
+dependencies = [
+    "textual>=1.0",
+    "httpx>=0.27",
+    "pyperclip>=1.8",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[project.scripts]
+prompt-enhancer = "prompt_enhancer.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/prompt_enhancer"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-q"

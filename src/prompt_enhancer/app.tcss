@@ -1,0 +1,104 @@
+Screen {
+    layout: vertical;
+    background: $background;
+}
+
+#main {
+    height: 1fr;
+}
+
+#output {
+    height: 1fr;
+    margin: 1 1 0 1;
+    padding: 0 2;
+    border: round $primary;
+    background: $surface;
+    color: $text;
+}
+
+/* Editable per-line view of the refined prompt; hidden until a result lands. */
+#output-rows {
+    display: none;
+    height: 1fr;
+    margin: 1 1 0 1;
+    padding: 0 1;
+    border: round $primary;
+    background: $surface;
+    color: $text;
+}
+
+#output-rows ListItem {
+    height: auto;
+    padding: 0;
+    background: transparent;
+}
+
+/* Containers default to height: 1fr, which would stretch every row to a
+   fraction of the viewport — pin rows to their content height. */
+#output-rows ListItem Horizontal {
+    height: auto;
+}
+
+#output-rows ListItem:hover {
+    background: $surface-lighten-1;
+}
+
+.row-text {
+    width: 1fr;
+    padding: 0 1;
+}
+
+.row-btn {
+    width: auto;
+    min-width: 3;
+    height: 1;
+    min-height: 1;
+    border: none;
+    background: transparent;
+    text-style: bold;
+    color: $text-muted;
+}
+
+.row-btn:hover {
+    background: $primary 20%;
+    color: $text;
+}
+
+.row-del-btn:hover {
+    background: $error 30%;
+}
+
+/* Inline editor that temporarily replaces the row text. */
+.row-input {
+    width: 1fr;
+    height: 3;
+    border: round $accent;
+    background: $surface;
+}
+
+#input-bar {
+    height: auto;
+    margin: 1 1 1 1;
+}
+
+#prompt-input {
+    width: 1fr;
+    border: round $primary;
+    background: $surface;
+}
+
+#prompt-input:focus {
+    border: round $accent;
+}
+
+#level-button {
+    width: auto;
+    min-width: 10;
+    margin-left: 1;
+}
+
+#copy-button {
+    width: auto;
+    min-width: 12;
+    margin-left: 1;
+}
