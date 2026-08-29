@@ -202,6 +202,20 @@ class PromptEnhancerApp(App[None]):
 
     # -- Status log rendering ---------------------------------------------------
 
+    def _set_output_text(self, text: str) -> None:
+        """Replace the read-only pane's content.
+
+        TextArea's `text` setter leaves the cursor wherever it was, so if the
+        old content was multi-line (a clarifying question) and the user clicked
+        into it, the stale cursor location ends up past the end of the new
+        text — the next mouse-up then raises ValueError inside
+        `record_cursor_width` and crashes the app. Park the cursor on (0, 0)
+        after every replacement.
+        """
+        output = self.query_one("#output", TextArea)
+        output.text = text
+        output.move_cursor((0, 0))
+
     def _push_status(self, line: str) -> None:
         if not self._status_mode:
             return
@@ -220,7 +234,7 @@ class PromptEnhancerApp(App[None]):
         self._render_status()
 
     def _render_status(self) -> None:
-        self.query_one("#output", TextArea).text = "\n".join(self._status_lines)
+        self._set_output_text("\n".join(self._status_lines))
 
     # -- View switching (status/stream pane vs. editable rows) -------------------
 
@@ -449,7 +463,7 @@ class PromptEnhancerApp(App[None]):
     def _present_question(self, question: str, index: int, total: int) -> None:
         output = self.query_one("#output", TextArea)
         output.border_title = "clarification"
-        output.text = (
+        self._set_output_text(
             f"To tailor the prompt, please answer ({index}/{total}):\n\n"
             f"  ? {question}\n\n"
             "Type an answer and press Enter — or leave it empty to skip."
@@ -483,7 +497,7 @@ class PromptEnhancerApp(App[None]):
         if error is not None:
             self._show_text_view()
             output = self.query_one("#output", TextArea)
-            output.text = f"✗ Generation failed: {error}"
+            self._set_output_text(f"✗ Generation failed: {error}")
             output.border_title = "error"
             self.notify(error, title="Generation failed", severity="error", timeout=8)
         else:
@@ -512,9 +526,12 @@ class PromptEnhancerApp(App[None]):
         output = self.query_one("#output", TextArea)
         if not self._stream_started:
             # First real tokens: wipe the spinner / QnA text so only the
-            # generation is on screen from here on.
+            # generation is on screen from here on — and stop the spinner
+            # interval, whose every tick rewrote the pane and made the
+            # arriving text flicker away and reappear on line 1.
             self._stream_started = True
-            output.text = ""
+            self._spinner_active = False
+            self._set_output_text("")
         # Append incrementally at the document end — replacing the whole text
         # every flush forced a full relayout and made the pane flicker.
         output.insert(chunk, location=output.document.end)
@@ -535,7 +552,7 @@ class PromptEnhancerApp(App[None]):
         if not self._spinner_active:
             return
         frame = SPINNER_FRAMES[self._spinner_frame]
-        self.query_one("#output", TextArea).text = f"{frame} {self._loading_message} {LOADING_HINT}"
+        self._set_output_text(f"{frame} {self._loading_message} {LOADING_HINT}")
 
     # -- Clipboard ------------------------------------------------------------------
 

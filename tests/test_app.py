@@ -346,6 +346,45 @@ async def test_clarify_button_click_toggles_and_updates_label():
         assert str(clarify_button.label) == "Clarify ✗"
 
 
+# -- Output pane stability -----------------------------------------------------------
+
+
+async def test_text_replacement_keeps_cursor_in_bounds_for_mouse_up():
+    """Regression: clicking into the multi-line clarify question moved the
+    output pane's cursor to row 1; when the worker later replaced the pane
+    with a single-line spinner, mouse-up raised ValueError inside
+    record_cursor_width (stale cursor past end of document) and crashed."""
+    app, _ = make_app(clarify=False)
+    async with app.run_test() as pilot:
+        await _wait_until(lambda: app._booted, pilot)
+        output = app.query_one("#output", TextArea)
+
+        app._present_question("Which programming language?", 1, 2)  # multi-line pane
+        output.move_cursor((1, 0))  # ...as if the user clicked the question line
+        app._start_spinner("Enhancing with your clarifications …")  # pane now 1 line
+
+        assert output.cursor_location[0] < output.document.line_count
+        output.record_cursor_width()  # raised ValueError before the fix
+
+
+async def test_spinner_stops_overwriting_once_stream_starts():
+    """Regression: the spinner interval kept rewriting the pane every 0.1s
+    while tokens streamed in, so the response flickered away and reappeared
+    on line 1. The first flush must retire the spinner for good."""
+    app, _ = make_app(clarify=False)
+    async with app.run_test() as pilot:
+        await _wait_until(lambda: app._booted, pilot)
+
+        app._generating = True
+        app._show_text_view()
+        app._start_spinner("Enhancing with qwen3.5:9b …")
+        app._on_token("hello ")
+        app._flush_stream()
+
+        assert app._spinner_active is False
+        assert app.query_one("#output", TextArea).text == "hello "
+
+
 # -- Comprehensiveness level -----------------------------------------------------------
 
 
