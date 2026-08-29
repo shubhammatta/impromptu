@@ -140,6 +140,7 @@ async def test_clarify_defaults_to_off(monkeypatch):
     async with app.run_test() as pilot:
         await _wait_until(lambda: app._booted, pilot)
         assert app.clarify_enabled is False
+        assert str(app.query_one("#clarify-button", Button).label) == "Clarify ✗"
         assert "clarify off" in app.sub_title
 
 
@@ -149,6 +150,7 @@ async def test_clarify_env_default_respected(monkeypatch):
     async with app.run_test() as pilot:
         await _wait_until(lambda: app._booted, pilot)
         assert app.clarify_enabled is True
+        assert str(app.query_one("#clarify-button", Button).label) == "Clarify ✓"
         assert "clarify on" in app.sub_title
 
 
@@ -312,14 +314,36 @@ async def test_ctrl_t_toggles_clarify_mode():
     async with app.run_test() as pilot:
         await _wait_until(lambda: app._booted, pilot)
         assert app.clarify_enabled is True
+        assert str(app.query_one("#clarify-button", Button).label) == "Clarify ✓"
 
         await pilot.press("ctrl+t")
         assert app.clarify_enabled is False
+        # The button tracks the status, not just the keybinding path.
+        assert str(app.query_one("#clarify-button", Button).label) == "Clarify ✗"
         assert "clarify off" in app.sub_title
 
         await pilot.press("ctrl+t")
         assert app.clarify_enabled is True
+        assert str(app.query_one("#clarify-button", Button).label) == "Clarify ✓"
         assert "clarify on" in app.sub_title
+
+
+async def test_clarify_button_click_toggles_and_updates_label():
+    app, _ = make_app(clarify=False)
+    async with app.run_test() as pilot:
+        await _wait_until(lambda: app._booted, pilot)
+        clarify_button = app.query_one("#clarify-button", Button)
+        assert str(clarify_button.label) == "Clarify ✗"  # default off
+
+        clarify_button.press()
+        await pilot.pause(0.1)
+        assert app.clarify_enabled is True
+        assert str(clarify_button.label) == "Clarify ✓"
+
+        clarify_button.press()
+        await pilot.pause(0.1)
+        assert app.clarify_enabled is False
+        assert str(clarify_button.label) == "Clarify ✗"
 
 
 # -- Comprehensiveness level -----------------------------------------------------------

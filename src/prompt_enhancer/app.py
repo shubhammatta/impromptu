@@ -159,6 +159,7 @@ class PromptEnhancerApp(App[None]):
         with Horizontal(id="input-bar"):
             yield PromptInput(placeholder=INPUT_PLACEHOLDER, id="prompt-input")
             yield Button(f"Level {self.level}", id="level-button")
+            yield Button("Clarify ✓" if self.clarify_enabled else "Clarify ✗", id="clarify-button")
             yield Button("Copy", variant="primary", id="copy-button")
         yield Footer()
 
@@ -333,8 +334,17 @@ class PromptEnhancerApp(App[None]):
             timeout=2,
         )
 
+    @on(Button.Pressed, "#clarify-button")
+    def _on_clarify_pressed(self, event: Button.Pressed) -> None:
+        self.action_toggle_clarify()
+
     def action_toggle_clarify(self) -> None:
         self.clarify_enabled = not self.clarify_enabled
+        # The label is the status display: keep it in sync with every toggle,
+        # whether it came from this button or Ctrl+T.
+        self.query_one("#clarify-button", Button).label = (
+            "Clarify ✓" if self.clarify_enabled else "Clarify ✗"
+        )
         self._refresh_sub_title()
         state = "enabled" if self.clarify_enabled else "disabled"
         self.notify(f"Clarifying questions {state}.", title="Clarify", timeout=2)

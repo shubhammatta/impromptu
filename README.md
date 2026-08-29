@@ -11,7 +11,7 @@ Ollama model (`qwen3.5:9b`, Q4) — with **fully automated Ollama lifecycle mana
 │ ## Role & Persona                                    ✏   ✖   │
 │ You are a meticulous code reviewer...                ✏   ✖   │
 ├──────────────────────────────────────────────────────────────┤
-│ Enter crude prompt...              [Level 5] [ Copy ]        │
+│ Enter crude prompt...       [Level 5] [Clarify ✗] [ Copy ]   │
 └─ Enter: Submit · Ctrl+C: Copy · Ctrl+L: Level · Ctrl+Q: Quit ┘
 ```
 
@@ -106,8 +106,9 @@ round before the expensive generation:
 
 The round is best-effort by design: if the question call fails or returns
 garbage, the app notifies you and proceeds with plain generation. Toggle at
-runtime with **`Ctrl+T`**, or set the default with `--clarify` /
-`--no-clarify` / `PROMPT_ENHANCER_CLARIFY=1`.
+runtime with **`Ctrl+T`** or the **`Clarify ✓/✗` button** in the input bar
+(the label always shows the current status), or set the default with
+`--clarify` / `--no-clarify` / `PROMPT_ENHANCER_CLARIFY=1`.
 
 Answers are handed over through a small state machine that ignores Enter
 bounces: a repeat press can never answer the *next* question with an empty
