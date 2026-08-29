@@ -169,6 +169,7 @@ On launch the app runs a boot worker (the TUI stays responsive throughout):
 | `PROMPT_ENHANCER_OLLAMA_BIN`           | `ollama` from `PATH`      | Explicit path to the ollama binary  |
 | `PROMPT_ENHANCER_CLARIFY`              | `0` (off)                 | Ask clarifying questions by default |
 | `PROMPT_ENHANCER_LEVEL`                | `5`                       | Starting comprehensiveness level (1–5) |
+| `PROMPT_ENHANCER_THINK`                | `0` (off)                 | Let the model reason in a hidden `<think>` pass before answering (much slower) |
 | `PROMPT_ENHANCER_HISTORY`              | `~/.cache/prompt-enhancer/history.txt` | Prompt history file     |
 | `PROMPT_ENHANCER_STOP_OLLAMA_ON_EXIT`  | unset (leave daemon up)   | SIGTERM a spawned daemon on quit    |
 
@@ -225,7 +226,16 @@ stream → copy → quit) via Textual's `Pilot`.
 - **Startup timeout** — inspect `~/.cache/prompt-enhancer/ollama-serve.log`;
   the usual cause is a port conflict on 11434.
 - **First generation is slow** — the Q4 9B model must page into memory on cold
-  start; subsequent submissions are much faster. The loading indicator keeps
-  you informed.
+  start (~2 s once the daemon has the weights in its file cache); subsequent
+  submissions are much faster. The loading indicator keeps you informed.
+- **Enhancement wall time ≈ output length ÷ model speed** — the exhaustive
+  Level 5 output is a ~3k-token prompt, which is ~50 s at this model's ~53
+  tok/s. Pick a lower level for short prompts; response time scales with the
+  size of the engineered result, not with your input size.
+- **Thinking is off by default** — `qwen3.5` is a reasoning model: left
+  enabled it streams thousands of *invisible* chain-of-thought tokens (a
+  separate `thinking` field) before the answer, turning a 2-second result into
+  a minute-long wait. The app sends `"think": false` unless you opt in with
+  `PROMPT_ENHANCER_THINK=1`.
 - **Clipboard errors on Linux** — `pyperclip` needs `xclip`/`wl-copy`; on macOS
   `pbcopy` is built in.

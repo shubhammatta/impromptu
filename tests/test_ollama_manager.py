@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
+import prompt_enhancer.ollama as ollama_module
 from prompt_enhancer.ollama import OllamaError, OllamaManager
 
 MODEL = "qwen3.5:9b"
@@ -175,6 +176,7 @@ async def test_ask_returns_non_streaming_response():
     assert text == '["Q1?", "Q2?"]'
     assert captured["payload"]["stream"] is False
     assert captured["payload"]["system"] == "be brief"
+    assert captured["payload"]["think"] is False  # thinking off by default (slow)
 
 
 async def test_ask_surfaces_http_error():
@@ -202,6 +204,7 @@ async def test_generate_streams_tokens_to_callback():
         payload = json.loads(request.content)
         assert payload["model"] == MODEL
         assert payload["stream"] is True
+        assert payload["think"] is False  # thinking off by default (slow)
         assert "Expert Prompt Engineer" in payload["system"]
         return httpx.Response(
             200,
@@ -219,6 +222,22 @@ async def test_generate_streams_tokens_to_callback():
     text = await manager.generate("crude input", on_token=tokens.append)
     assert text == "Hello world"
     assert tokens == ["Hello ", "world"]
+
+
+async def test_generate_and_ask_honor_think_opt_in(monkeypatch):
+    captured: list[dict] = []
+
+    def handler(request):
+        captured.append(json.loads(request.content))
+        if request.url.path == "/api/generate":
+            return httpx.Response(200, text=ndjson([{"response": "ok", "done": True}]))
+        return httpx.Response(200, json={"response": "ok", "done": True})
+
+    monkeypatch.setattr(ollama_module, "ENABLE_THINKING", True)
+    manager = make_manager(handler)
+    await manager.ask("x", system="s")
+    await manager.generate("x", system="s")
+    assert all(payload["think"] is True for payload in captured)
 
 
 async def test_generate_surfaces_ndjson_error():

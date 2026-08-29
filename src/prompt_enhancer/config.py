@@ -32,6 +32,17 @@ TEMPERATURE = 0.7
 TOP_P = 0.9
 NUM_CTX = 8192
 
+# Qwen3.5 is a thinking model: by default it streams a separate `thinking` field
+# of chain-of-thought before the answer — for a short prompt that is often
+# thousands of tokens (a minute of wall time at ~53 tok/s) of invisible latency
+# the UI cannot show. Thinking is therefore OFF by default; opt back in with
+# PROMPT_ENHANCER_THINK=1.
+ENABLE_THINKING = os.environ.get("PROMPT_ENHANCER_THINK", "").lower() in {
+    "1",
+    "true",
+    "yes",
+}
+
 # --- Clarifying QnA ---------------------------------------------------------------
 # Ask up to N clarifying questions before enhancing when the mode is enabled.
 MAX_QUESTIONS = 2

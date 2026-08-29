@@ -28,6 +28,7 @@ import httpx
 
 from .config import (
     ASK_READ_TIMEOUT,
+    ENABLE_THINKING,
     GENERATE_PATH,
     GENERATE_READ_TIMEOUT,
     HEALTH_PATH,
@@ -287,6 +288,7 @@ class OllamaManager:
             "model": self.model,
             "prompt": prompt,
             "stream": False,
+            "think": ENABLE_THINKING,
             "options": {"temperature": TEMPERATURE, "top_p": TOP_P, "num_ctx": NUM_CTX},
         }
         if system is not None:
@@ -328,6 +330,7 @@ class OllamaManager:
             "prompt": prompt,
             "system": system if system is not None else SYSTEM_PROMPT,
             "stream": True,
+            "think": ENABLE_THINKING,
             "options": {"temperature": TEMPERATURE, "top_p": TOP_P, "num_ctx": NUM_CTX},
         }
         parts: list[str] = []
