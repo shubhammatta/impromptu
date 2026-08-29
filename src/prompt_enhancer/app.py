@@ -47,33 +47,46 @@ LOADING_HINT = "(first run loads the model into memory; this can take a while)"
 ANSWER_GRACE_SECONDS = 0.5
 
 
-class HistoryInput(Input):
-    """Main prompt input with shell-style Up/Down history traversal."""
+class PromptInput(TextArea):
+    """Main prompt input: multi-line (Shift+Enter / Alt+Enter insert a newline),
+    with shell-style Up/Down history traversal when the cursor sits on the
+    first/last line — inside the text, arrows just move the cursor."""
 
     BINDINGS = [
-        Binding("up", "history_prev", show=False),
-        Binding("down", "history_next", show=False),
+        Binding("shift+enter", "newline", show=False),
+        Binding("alt+enter", "newline", show=False),
+        Binding("up", "history_or_up", show=False),
+        Binding("down", "history_or_down", show=False),
     ]
 
-    def action_history_prev(self) -> None:
+    def action_newline(self) -> None:
+        self.insert("\n")
+
+    def action_history_or_up(self) -> None:
         app = self.app
         assert isinstance(app, PromptEnhancerApp)
+        if self.cursor_location[0] > 0:
+            self.action_cursor_up()
+            return
         if app._awaiting_answer:
             return  # Up during a question would shove a prompt into the answer
-        entry = app.history.older(self.value)
+        entry = app.history.older(self.text)
         if entry is not None:
-            self.value = entry
-            self.cursor_position = len(entry)
+            self.text = entry
+            self.move_cursor(self.document.end)
 
-    def action_history_next(self) -> None:
+    def action_history_or_down(self) -> None:
         app = self.app
         assert isinstance(app, PromptEnhancerApp)
+        if self.cursor_location[0] < self.document.line_count - 1:
+            self.action_cursor_down()
+            return
         if app._awaiting_answer:
             return
         entry = app.history.newer()
         if entry is not None:
-            self.value = entry
-            self.cursor_position = len(entry)
+            self.text = entry
+            self.move_cursor(self.document.end)
 
 
 class PromptEnhancerApp(App[None]):
@@ -144,7 +157,7 @@ class PromptEnhancerApp(App[None]):
             )
             yield ListView(id="output-rows")
         with Horizontal(id="input-bar"):
-            yield HistoryInput(placeholder=INPUT_PLACEHOLDER, id="prompt-input")
+            yield PromptInput(placeholder=INPUT_PLACEHOLDER, id="prompt-input")
             yield Button(f"Level {self.level}", id="level-button")
             yield Button("Copy", variant="primary", id="copy-button")
         yield Footer()
@@ -160,7 +173,7 @@ class PromptEnhancerApp(App[None]):
 
     @work(group="boot", exclusive=True)
     async def _boot(self) -> None:
-        prompt_input = self.query_one("#prompt-input", Input)
+        prompt_input = self.query_one("#prompt-input", PromptInput)
         prompt_input.disabled = True
         self._push_status("◌ Booting Prompt Enhancer …")
         try:
@@ -329,12 +342,12 @@ class PromptEnhancerApp(App[None]):
     # -- Submission & enhancement -------------------------------------------------
 
     def action_submit(self) -> None:
-        prompt_input = self.query_one("#prompt-input", Input)
+        prompt_input = self.query_one("#prompt-input", PromptInput)
         if self._awaiting_answer:
             # Latch: only the FIRST Enter per question is accepted. A repeat
             # press must never fall through and answer the NEXT question with
             # an empty string before it is even presented.
-            answer = prompt_input.value.strip()
+            answer = prompt_input.text.strip()
             if (
                 prompt_input.disabled
                 or self._answer_event is None
@@ -343,7 +356,7 @@ class PromptEnhancerApp(App[None]):
             ):
                 return
             self._last_answer = answer
-            prompt_input.value = ""
+            prompt_input.text = ""
             self._answer_event.set()
             self.history.reset_browse()
             return
@@ -358,12 +371,12 @@ class PromptEnhancerApp(App[None]):
         if not self._booted:
             self.notify("Ollama is still starting up …", title="Please wait", severity="warning")
             return
-        crude = prompt_input.value.strip()
+        crude = prompt_input.text.strip()
         if not crude:
             self.notify("Type a crude prompt first.", title="Empty input", severity="warning")
             return
         self.history.add(crude)
-        prompt_input.value = ""
+        prompt_input.text = ""
         prompt_input.disabled = True
         self._generating = True
         self._status_mode = False
@@ -436,7 +449,7 @@ class PromptEnhancerApp(App[None]):
         """Hand control to the Input until the user answers; empty answer = skip."""
         self._awaiting_answer = True
         self._answer_event = asyncio.Event()
-        prompt_input = self.query_one("#prompt-input", Input)
+        prompt_input = self.query_one("#prompt-input", PromptInput)
         prompt_input.disabled = False
         prompt_input.placeholder = ANSWER_PLACEHOLDER
         self._question_shown_at = time.monotonic()
@@ -468,7 +481,7 @@ class PromptEnhancerApp(App[None]):
             cleaned = extract_prompt(result)
             self._show_rows(cleaned)
             self.notify("Prompt enhanced — edit rows, or press Ctrl+C to copy.", title="Done", timeout=4)
-        prompt_input = self.query_one("#prompt-input", Input)
+        prompt_input = self.query_one("#prompt-input", PromptInput)
         prompt_input.disabled = False
         prompt_input.placeholder = INPUT_PLACEHOLDER
         prompt_input.focus()

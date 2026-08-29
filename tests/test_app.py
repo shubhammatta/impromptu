@@ -83,10 +83,10 @@ async def test_boot_ready_generate_and_copy(monkeypatch):
     async with app.run_test() as pilot:
         await _wait_until(lambda: app._booted, pilot)
 
-        prompt_input = app.query_one("#prompt-input", Input)
+        prompt_input = app.query_one("#prompt-input", TextArea)
         assert not prompt_input.disabled
 
-        prompt_input.value = "make me a code review prompt"
+        prompt_input.text = "make me a code review prompt"
         await pilot.press("enter")
         await _wait_until(lambda: not app._generating, pilot)
         await _wait_until(lambda: app._in_rows_view, pilot)
@@ -112,13 +112,13 @@ async def test_empty_submit_is_rejected_and_input_kept():
     async with app.run_test() as pilot:
         await _wait_until(lambda: app._booted, pilot)
 
-        prompt_input = app.query_one("#prompt-input", Input)
-        prompt_input.value = "   "
+        prompt_input = app.query_one("#prompt-input", TextArea)
+        prompt_input.text = "   "
         await pilot.press("enter")
         await pilot.pause(0.1)
 
         assert not app._generating  # no generation was started
-        assert prompt_input.value == "   "  # crude input not discarded
+        assert prompt_input.text == "   "  # crude input not discarded
 
 
 async def test_ctrl_q_shuts_down_cleanly():
@@ -164,8 +164,8 @@ async def test_clarify_round_merges_answers_into_generation():
     async with app.run_test() as pilot:
         await _wait_until(lambda: app._booted, pilot)
 
-        prompt_input = app.query_one("#prompt-input", Input)
-        prompt_input.value = "write me a script"
+        prompt_input = app.query_one("#prompt-input", TextArea)
+        prompt_input.text = "write me a script"
         await pilot.press("enter")
 
         # Question 1
@@ -173,13 +173,13 @@ async def test_clarify_round_merges_answers_into_generation():
         output = app.query_one("#output", TextArea)
         assert "(1/2)" in output.text and "Which programming language?" in output.text
         assert prompt_input.placeholder == ANSWER_PLACEHOLDER
-        prompt_input.value = "Python 3.12"
+        prompt_input.text = "Python 3.12"
         await pilot.press("enter")
 
         # Question 2
         await _wait_until(lambda: app._awaiting_answer, pilot)
         assert "(2/2)" in app.query_one("#output", TextArea).text
-        prompt_input.value = "Backend engineers"
+        prompt_input.text = "Backend engineers"
         await pilot.press("enter")
 
         await _wait_until(lambda: not app._generating, pilot)
@@ -211,15 +211,15 @@ async def test_clarify_skipped_questions_still_generate():
     async with app.run_test() as pilot:
         await _wait_until(lambda: app._booted, pilot)
 
-        prompt_input = app.query_one("#prompt-input", Input)
-        prompt_input.value = "write me a script"
+        prompt_input = app.query_one("#prompt-input", TextArea)
+        prompt_input.text = "write me a script"
         await pilot.press("enter")
 
         await _wait_until(lambda: app._awaiting_answer, pilot)
         await pilot.pause(0.6)  # deliberate empty skip must be past the grace window
         await pilot.press("enter")  # empty answer -> skip question 1
         await _wait_until(lambda: app._awaiting_answer, pilot)
-        prompt_input.value = "CLI users"  # only answer question 2
+        prompt_input.text = "CLI users"  # only answer question 2
         await pilot.press("enter")
 
         await _wait_until(lambda: not app._generating, pilot)
@@ -241,13 +241,13 @@ async def test_double_enter_does_not_skip_a_question():
     async with app.run_test() as pilot:
         await _wait_until(lambda: app._booted, pilot)
 
-        prompt_input = app.query_one("#prompt-input", Input)
-        prompt_input.value = "write me a script"
+        prompt_input = app.query_one("#prompt-input", TextArea)
+        prompt_input.text = "write me a script"
         await pilot.press("enter")
 
         # Question 1 — answer, then hammer Enter again before the worker resumes.
         await _wait_until(lambda: app._awaiting_answer, pilot)
-        prompt_input.value = "Python 3.12"
+        prompt_input.text = "Python 3.12"
         await pilot.press("enter")
         await pilot.press("enter")
         await pilot.press("enter")
@@ -255,7 +255,7 @@ async def test_double_enter_does_not_skip_a_question():
         # Question 2 must still appear and must still accept a real answer.
         await _wait_until(lambda: app._awaiting_answer, pilot)
         assert "(2/2)" in app.query_one("#output", TextArea).text
-        prompt_input.value = "Backend engineers"
+        prompt_input.text = "Backend engineers"
         await pilot.press("enter")
         await pilot.press("enter")  # stragglers must be ignored too
 
@@ -277,8 +277,8 @@ async def test_clarify_model_asks_nothing_proceeds_directly():
     )
     async with app.run_test() as pilot:
         await _wait_until(lambda: app._booted, pilot)
-        prompt_input = app.query_one("#prompt-input", Input)
-        prompt_input.value = "just do the thing"
+        prompt_input = app.query_one("#prompt-input", TextArea)
+        prompt_input.text = "just do the thing"
         await pilot.press("enter")
         await _wait_until(lambda: not app._generating, pilot)
 
@@ -294,8 +294,8 @@ async def test_clarify_failure_degrades_to_plain_generation():
     )
     async with app.run_test() as pilot:
         await _wait_until(lambda: app._booted, pilot)
-        prompt_input = app.query_one("#prompt-input", Input)
-        prompt_input.value = "write me a script"
+        prompt_input = app.query_one("#prompt-input", TextArea)
+        prompt_input.text = "write me a script"
         await pilot.press("enter")
         await _wait_until(lambda: not app._generating, pilot)
 
@@ -363,8 +363,8 @@ async def test_level_selects_the_system_prompt_sent_to_ollama():
     )
     async with app.run_test() as pilot:
         await _wait_until(lambda: app._booted, pilot)
-        prompt_input = app.query_one("#prompt-input", Input)
-        prompt_input.value = "a crude prompt"
+        prompt_input = app.query_one("#prompt-input", TextArea)
+        prompt_input.text = "a crude prompt"
         await pilot.press("enter")
         await _wait_until(lambda: not app._generating, pilot)
 
@@ -379,8 +379,8 @@ async def test_default_level_sends_the_original_system_prompt():
     )
     async with app.run_test() as pilot:
         await _wait_until(lambda: app._booted, pilot)
-        prompt_input = app.query_one("#prompt-input", Input)
-        prompt_input.value = "a crude prompt"
+        prompt_input = app.query_one("#prompt-input", TextArea)
+        prompt_input.text = "a crude prompt"
         await pilot.press("enter")
         await _wait_until(lambda: not app._generating, pilot)
 
@@ -392,8 +392,8 @@ async def test_default_level_sends_the_original_system_prompt():
 
 async def _generate_result(app: PromptEnhancerApp, pilot, text: str) -> None:
     await _wait_until(lambda: app._booted, pilot)
-    prompt_input = app.query_one("#prompt-input", Input)
-    prompt_input.value = text
+    prompt_input = app.query_one("#prompt-input", TextArea)
+    prompt_input.text = text
     await pilot.press("enter")
     await _wait_until(lambda: not app._generating, pilot)
     await _wait_until(lambda: app._in_rows_view, pilot)
@@ -476,25 +476,25 @@ async def test_up_down_traverses_submitted_prompts():
     app, _ = make_app(clarify=False)
     async with app.run_test() as pilot:
         await _wait_until(lambda: app._booted, pilot)
-        pi = app.query_one("#prompt-input", Input)
+        pi = app.query_one("#prompt-input", TextArea)
         for text in ("prompt one", "prompt two"):
-            pi.value = text
+            pi.text = text
             await pilot.press("enter")
             await _wait_until(lambda: not app._generating, pilot)
             await _wait_until(lambda: app._in_rows_view, pilot)
             await pilot.pause(0.1)
 
-        pi.value = ""
+        pi.text = ""
         await pilot.press("up")
-        assert pi.value == "prompt two"
+        assert pi.text == "prompt two"
         await pilot.press("up")
-        assert pi.value == "prompt one"
+        assert pi.text == "prompt one"
         await pilot.press("up")
-        assert pi.value == "prompt one"  # stays at the oldest entry
+        assert pi.text == "prompt one"  # stays at the oldest entry
         await pilot.press("down")
-        assert pi.value == "prompt two"
+        assert pi.text == "prompt two"
         await pilot.press("down")
-        assert pi.value == ""  # the pre-traversal draft is restored
+        assert pi.text == ""  # the pre-traversal draft is restored
 
 
 async def test_browsed_history_entry_resubmits_and_dedupes():
@@ -504,15 +504,15 @@ async def test_browsed_history_entry_resubmits_and_dedupes():
     )
     async with app.run_test() as pilot:
         await _wait_until(lambda: app._booted, pilot)
-        pi = app.query_one("#prompt-input", Input)
-        pi.value = "prompt one"
+        pi = app.query_one("#prompt-input", TextArea)
+        pi.text = "prompt one"
         await pilot.press("enter")
         await _wait_until(lambda: not app._generating, pilot)
         await _wait_until(lambda: app._in_rows_view, pilot)
         await pilot.pause(0.1)
 
         await pilot.press("up")  # recall, then submit unchanged
-        assert pi.value == "prompt one"
+        assert pi.text == "prompt one"
         await pilot.press("enter")
         await _wait_until(lambda: len(generate_bodies) == 2, pilot)
 
@@ -525,18 +525,18 @@ async def test_history_persists_across_restart(tmp_path):
     app1, _ = make_app(clarify=False, history_path=str(hist))
     async with app1.run_test() as pilot:
         await _wait_until(lambda: app1._booted, pilot)
-        pi = app1.query_one("#prompt-input", Input)
-        pi.value = "remembered prompt"
+        pi = app1.query_one("#prompt-input", TextArea)
+        pi.text = "remembered prompt"
         await pilot.press("enter")
         await _wait_until(lambda: not app1._generating, pilot)
 
     app2, _ = make_app(clarify=False, history_path=str(hist))
     async with app2.run_test() as pilot:
         await _wait_until(lambda: app2._booted, pilot)
-        pi = app2.query_one("#prompt-input", Input)
-        pi.value = ""
+        pi = app2.query_one("#prompt-input", TextArea)
+        pi.text = ""
         await pilot.press("up")
-        assert pi.value == "remembered prompt"
+        assert pi.text == "remembered prompt"
 
 
 async def test_up_during_clarify_answer_does_not_traverse_history():
@@ -545,11 +545,68 @@ async def test_up_during_clarify_answer_does_not_traverse_history():
     )
     async with app.run_test() as pilot:
         await _wait_until(lambda: app._booted, pilot)
-        pi = app.query_one("#prompt-input", Input)
-        pi.value = "write me a script"
+        pi = app.query_one("#prompt-input", TextArea)
+        pi.text = "write me a script"
         await pilot.press("enter")
         await _wait_until(lambda: app._awaiting_answer, pilot)
 
-        pi.value = "my partial answer"
+        pi.text = "my partial answer"
         await pilot.press("up")  # must not dump a past prompt into the answer
-        assert pi.value == "my partial answer"
+        assert pi.text == "my partial answer"
+
+
+# -- Multi-line prompt input ---------------------------------------------------------
+
+
+async def test_shift_and_alt_enter_insert_newlines_and_submit_multiline():
+    generate_bodies: list[dict] = []
+    app, _ = make_app(
+        handler=make_handler(generate_bodies=generate_bodies), clarify=False
+    )
+    async with app.run_test() as pilot:
+        await _wait_until(lambda: app._booted, pilot)
+        pi = app.query_one("#prompt-input", TextArea)
+
+        pi.text = "part one"
+        pi.move_cursor(pi.document.end)
+        await pilot.press("shift+enter")
+        assert pi.text == "part one\n"
+
+        pi.insert("part two")  # as if typed after the newline
+        pi.move_cursor(pi.document.end)
+        await pilot.press("alt+enter")
+        pi.insert("part three")
+        assert pi.text == "part one\npart two\npart three"
+
+        await pilot.press("enter")  # Enter still submits the whole thing
+        await _wait_until(lambda: len(generate_bodies) == 1, pilot)
+        assert generate_bodies[0]["prompt"] == "part one\npart two\npart three"
+
+
+async def test_up_moves_cursor_inside_multiline_text_instead_of_history():
+    app, _ = make_app(clarify=False)
+    async with app.run_test() as pilot:
+        await _wait_until(lambda: app._booted, pilot)
+        pi = app.query_one("#prompt-input", TextArea)
+
+        pi.text = "prompt one"
+        await pilot.press("enter")
+        await _wait_until(lambda: not app._generating, pilot)
+        await _wait_until(lambda: app._in_rows_view, pilot)
+        await pilot.pause(0.1)
+
+        pi.text = "first line\nsecond line"
+        pi.move_cursor(pi.document.end)  # cursor on the last line
+        await pilot.press("up")
+        assert pi.cursor_location[0] == 0  # moved up a line…
+        assert pi.text == "first line\nsecond line"  # …no history recall
+
+        await pilot.press("down")
+        assert pi.cursor_location[0] == 1
+        assert pi.text == "first line\nsecond line"
+
+        await pilot.press("up")  # cursor hop back to the first line…
+        assert pi.cursor_location[0] == 0
+        assert pi.text == "first line\nsecond line"
+        await pilot.press("up")  # …next Up on the first line recalls history
+        assert pi.text == "prompt one"

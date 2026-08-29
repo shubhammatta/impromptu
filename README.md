@@ -74,16 +74,22 @@ the refined prompt is a row with two buttons on the right —
 `Ctrl+C` copies exactly what the rows show (including your edits), not the
 original stream. Submitting a new crude prompt returns to the streaming view.
 
-## Prompt history
+## Big prompts & history
+
+The input box is a real multi-line editor: it grows with what you type (up to
+~6 lines, then it scrolls), and `Shift+Enter` (or `Alt+Enter`) inserts a new
+line so you can draft long, multi-part prompts before submitting with
+`Enter`.
 
 Every submitted crude prompt is remembered — `Up` recalls the previous one,
 `Up`/`Down` step through the list shell-style, and stepping past the newest
-entry restores whatever you were typing before you pressed `Up`. History
-survives restarts: it is appended to
-`~/.cache/prompt-enhancer/history.txt` (one prompt per line, capped at the
-200 most recent; re-locatable with `PROMPT_ENHANCER_HISTORY`). Traversal is
-suppressed while a clarifying question is on screen, so `Up` can never dump
-an old prompt into an answer.
+entry restores whatever you were typing before you pressed `Up`. Inside
+multi-line text the arrows just move the cursor; history kicks in when the
+cursor is already on the first (Up) or last (Down) line. History survives
+restarts: it is appended to `~/.cache/prompt-enhancer/history.txt` (one prompt
+per line, capped at the 200 most recent; re-locatable with
+`PROMPT_ENHANCER_HISTORY`). Traversal is suppressed while a clarifying
+question is on screen, so `Up` can never dump an old prompt into an answer.
 
 ## Clarifying QnA
 
@@ -117,7 +123,8 @@ at 2, dedupes, and yields *no questions* on anything unparseable.
 | Key      | Action                                             |
 | -------- | -------------------------------------------------- |
 | `Enter`  | Submit the crude prompt / answer the current question / commit a row edit |
-| `Up` / `Down` | Step through previously submitted prompts     |
+| `Shift+Enter` / `Alt+Enter` | Insert a new line for big, multi-part prompts |
+| `Up` / `Down` | Step through previously submitted prompts (when the cursor is on the first/last line); otherwise move the cursor |
 | `Escape` | Cancel the row edit in progress                    |
 | `Ctrl+C` | Copy the current result (edited rows included) to the clipboard |
 | `Ctrl+T` | Toggle clarifying QnA on/off                       |

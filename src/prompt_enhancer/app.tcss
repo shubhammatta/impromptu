@@ -83,6 +83,9 @@ Screen {
 
 #prompt-input {
     width: 1fr;
+    height: auto;       /* grows with the prompt… */
+    min-height: 3;      /* …starts at one line… */
+    max-height: 8;      /* …and scrolls past ~6 lines */
     border: round $primary;
     background: $surface;
 }
